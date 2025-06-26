@@ -9,7 +9,211 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          content: Json
+          conversation_id: string | null
+          created_at: string | null
+          generated_text: string | null
+          id: string
+          status: Database["public"]["Enums"]["document_status"] | null
+          title: string
+          type: Database["public"]["Enums"]["document_type"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: Json
+          conversation_id?: string | null
+          created_at?: string | null
+          generated_text?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["document_status"] | null
+          title: string
+          type: Database["public"]["Enums"]["document_type"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          conversation_id?: string | null
+          created_at?: string | null
+          generated_text?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["document_status"] | null
+          title?: string
+          type?: Database["public"]["Enums"]["document_type"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      law_articles: {
+        Row: {
+          article_number: string
+          chapter: string | null
+          content: string
+          created_at: string | null
+          id: string
+          keywords: string[] | null
+          section: string | null
+          title: string | null
+        }
+        Insert: {
+          article_number: string
+          chapter?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          keywords?: string[] | null
+          section?: string | null
+          title?: string | null
+        }
+        Update: {
+          article_number?: string
+          chapter?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          keywords?: string[] | null
+          section?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          cargo: string | null
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          orgao: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          cargo?: string | null
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          orgao?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          cargo?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          orgao?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          template_data: Json
+          type: Database["public"]["Enums"]["document_type"]
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          template_data: Json
+          type: Database["public"]["Enums"]["document_type"]
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          template_data?: Json
+          type?: Database["public"]["Enums"]["document_type"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +222,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      document_status: "draft" | "completed" | "archived"
+      document_type: "dfd" | "etp" | "tr"
+      user_role: "admin" | "servidor_publico" | "gestor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +339,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      document_status: ["draft", "completed", "archived"],
+      document_type: ["dfd", "etp", "tr"],
+      user_role: ["admin", "servidor_publico", "gestor"],
+    },
   },
 } as const
