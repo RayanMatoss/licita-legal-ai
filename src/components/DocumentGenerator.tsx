@@ -11,10 +11,13 @@ import { FileText, Download, Save } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type DocumentType = Database['public']['Enums']['document_type'];
 
 export default function DocumentGenerator() {
   const { user } = useAuth();
-  const [activeDocument, setActiveDocument] = useState('dfd');
+  const [activeDocument, setActiveDocument] = useState<DocumentType>('dfd');
   const [loading, setLoading] = useState(false);
 
   // Estados para DFD
@@ -52,7 +55,7 @@ export default function DocumentGenerator() {
     criterios_aceitacao: ''
   });
 
-  const saveDocument = async (type: string, data: any, title: string) => {
+  const saveDocument = async (type: DocumentType, data: any, title: string) => {
     if (!user) return;
 
     setLoading(true);
@@ -64,7 +67,7 @@ export default function DocumentGenerator() {
           title,
           type,
           content: data,
-          status: 'draft'
+          status: 'draft' as const
         });
 
       if (error) throw error;
@@ -76,7 +79,7 @@ export default function DocumentGenerator() {
     }
   };
 
-  const generateDocument = async (type: string, data: any) => {
+  const generateDocument = async (type: DocumentType, data: any) => {
     // Aqui seria implementada a geração do documento com IA
     toast.success('Documento gerado com sucesso!');
   };
@@ -90,7 +93,7 @@ export default function DocumentGenerator() {
         </div>
       </div>
 
-      <Tabs value={activeDocument} onValueChange={setActiveDocument}>
+      <Tabs value={activeDocument} onValueChange={(value) => setActiveDocument(value as DocumentType)}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="dfd">DFD - Documento de Formalização de Demanda</TabsTrigger>
           <TabsTrigger value="etp">ETP - Estudo Técnico Preliminar</TabsTrigger>

@@ -10,13 +10,16 @@ import { Badge } from '@/components/ui/badge';
 import { User, Save, Mail, Building, Briefcase } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type UserRole = Database['public']['Enums']['user_role'];
 
 interface UserProfileData {
   full_name: string;
   email: string;
   orgao: string;
   cargo: string;
-  role: string;
+  role: UserRole;
 }
 
 export default function UserProfile() {
@@ -98,22 +101,22 @@ export default function UserProfile() {
     }
   };
 
-  const getRoleLabel = (role: string) => {
-    const roles = {
+  const getRoleLabel = (role: UserRole) => {
+    const roles: Record<UserRole, string> = {
       'admin': 'Administrador',
       'servidor_publico': 'Servidor Público',
       'gestor': 'Gestor'
     };
-    return roles[role as keyof typeof roles] || role;
+    return roles[role];
   };
 
-  const getRoleColor = (role: string) => {
-    const colors = {
+  const getRoleColor = (role: UserRole) => {
+    const colors: Record<UserRole, string> = {
       'admin': 'bg-red-100 text-red-800',
       'servidor_publico': 'bg-blue-100 text-blue-800',
       'gestor': 'bg-green-100 text-green-800'
     };
-    return colors[role as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[role];
   };
 
   return (
@@ -185,7 +188,7 @@ export default function UserProfile() {
 
               <div className="space-y-2">
                 <Label htmlFor="role">Função no Sistema</Label>
-                <Select value={profile.role} onValueChange={(value) => setProfile({...profile, role: value})}>
+                <Select value={profile.role} onValueChange={(value: UserRole) => setProfile({...profile, role: value})}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
