@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
-import { Send, Bot, User, FileText, BookOpen, Scale, Download } from 'lucide-react';
+import { Send, Bot, User, Download, Paperclip, Mic } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,30 +20,22 @@ interface Message {
   documentType?: string;
 }
 
-const ChatInterface = () => {
+interface ChatInterfaceProps {
+  messages: Message[];
+  onAddMessage: (message: Message) => void;
+  onUpdateMessage: (messageId: string, updates: Partial<Message>) => void;
+  onRemoveMessage: (messageId: string) => void;
+  conversationId: string | null;
+}
+
+const ChatInterface = ({ 
+  messages, 
+  onAddMessage, 
+  onUpdateMessage, 
+  onRemoveMessage,
+  conversationId 
+}: ChatInterfaceProps) => {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'assistant',
-      content: `Olá! Sou a **LicitaIA**, sua assistente especializada em licitações públicas conforme a **Lei 14.133/2021**.
-
-Posso ajudá-lo com:
-📋 **Geração de documentos**: DFD, ETP e Termo de Referência
-📖 **Consultas à Lei 14.133/2021**: Artigos, procedimentos e interpretações
-💬 **Dúvidas técnicas**: Modalidades licitatórias, critérios de julgamento
-🔍 **Análise de documentos**: Revisão e sugestões de melhorias
-
-**Para gerar documentos, você pode pedir:**
-- "Gere um DFD para contratação de..."
-- "Preciso de um ETP para..."
-- "Crie um TR para..."
-
-Como posso ajudá-lo hoje?`,
-      timestamp: new Date(),
-    },
-  ]);
-  
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -84,7 +76,6 @@ Como posso ajudá-lo hoje?`,
 
       if (error) throw error;
 
-      // Criar arquivo para download
       const blob = new Blob([document.generated_text || ''], { type: 'text/plain' });
       const url = window.URL.createObjectURL(blob);
       const a = window.document.createElement('a');
@@ -230,7 +221,7 @@ Quanto mais detalhes você fornecer, melhor poderei ajudá-lo!`;
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    onAddMessage(userMessage);
     setInputValue('');
     setIsLoading(true);
 
@@ -243,7 +234,7 @@ Quanto mais detalhes você fornecer, melhor poderei ajudá-lo!`;
       isTyping: true,
     };
 
-    setMessages(prev => [...prev, typingMessage]);
+    onAddMessage(typingMessage);
 
     try {
       // Tentar gerar documento primeiro
@@ -259,7 +250,9 @@ Quanto mais detalhes você fornecer, melhor poderei ajudá-lo!`;
           documentType: documentResult.documentType,
         };
 
-        setMessages(prev => prev.filter(m => m.id !== 'typing').concat(aiResponse));
+        onRemoveMessage('typing');
+        onAddMessage(aiResponse);
+        
         toast({
           title: "Documento gerado!",
           description: "Seu documento foi criado com sucesso.",
@@ -273,7 +266,8 @@ Quanto mais detalhes você fornecer, melhor poderei ajudá-lo!`;
           timestamp: new Date(),
         };
 
-        setMessages(prev => prev.filter(m => m.id !== 'typing').concat(aiResponse));
+        onRemoveMessage('typing');
+        onAddMessage(aiResponse);
       }
     } catch (error: any) {
       console.error('Erro:', error);
@@ -284,7 +278,9 @@ Quanto mais detalhes você fornecer, melhor poderei ajudá-lo!`;
         timestamp: new Date(),
       };
 
-      setMessages(prev => prev.filter(m => m.id !== 'typing').concat(errorResponse));
+      onRemoveMessage('typing');
+      onAddMessage(errorResponse);
+      
       toast({
         title: "Erro",
         description: "Não foi possível processar sua solicitação.",
@@ -295,41 +291,34 @@ Quanto mais detalhes você fornecer, melhor poderei ajudá-lo!`;
     }
   };
 
-  const quickActions = [
-    {
-      icon: FileText,
-      text: 'Gerar DFD',
-      action: () => setInputValue('Gere um DFD para contratação de serviços de limpeza, valor estimado R$ 50.000, prazo 12 meses')
-    },
-    {
-      icon: FileText,
-      text: 'Criar ETP',
-      action: () => setInputValue('Preciso de um ETP para aquisição de equipamentos de informática, valor R$ 100.000')
-    },
-    {
-      icon: BookOpen,
-      text: 'Consultar Lei',
-      action: () => setInputValue('Quais são as principais mudanças da Lei 14.133/2021?')
-    },
-    {
-      icon: Scale,
-      text: 'Modalidades',
-      action: () => setInputValue('Explique as modalidades licitatórias da nova lei')
-    }
-  ];
+  if (!conversationId) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Bot className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">
+            Bem-vindo à LicitaIA
+          </h2>
+          <p className="text-gray-500 mb-4">
+            Selecione uma conversa ou inicie um novo chat para começar
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="border-b border-border/60 p-4 bg-card">
+      <div className="border-b border-gray-200 p-4 bg-white">
         <div className="flex items-center space-x-3">
-          <div className="p-2 rounded-lg bg-primary text-white">
+          <div className="p-2 rounded-lg bg-blue-600 text-white">
             <Bot className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="font-semibold text-lg">LicitaIA - Assistente Especializada</h3>
-            <p className="text-sm text-muted-foreground">
-              Lei 14.133/2021 • Documentos DFD, ETP, TR
+            <h3 className="font-semibold text-lg text-gray-900">LicitaIA</h3>
+            <p className="text-sm text-gray-600">
+              Assistente para Lei 14.133/2021
             </p>
           </div>
         </div>
@@ -337,16 +326,16 @@ Quanto mais detalhes você fornecer, melhor poderei ajudá-lo!`;
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4 max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto space-y-6">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex gap-3 ${
+              className={`flex gap-4 ${
                 message.type === 'user' ? 'justify-end' : 'justify-start'
               }`}
             >
               {message.type === 'assistant' && (
-                <Avatar className="h-8 w-8 bg-primary text-white">
+                <Avatar className="h-8 w-8 bg-blue-600 text-white">
                   <AvatarFallback>
                     <Bot className="h-4 w-4" />
                   </AvatarFallback>
@@ -355,8 +344,8 @@ Quanto mais detalhes você fornecer, melhor poderei ajudá-lo!`;
               
               <Card className={`max-w-[80%] p-4 ${
                 message.type === 'user' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-card'
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-50 border-gray-200'
               } ${message.isTyping ? 'animate-pulse' : ''}`}>
                 <div className="whitespace-pre-wrap text-sm leading-relaxed">
                   {message.content}
@@ -364,7 +353,7 @@ Quanto mais detalhes você fornecer, melhor poderei ajudá-lo!`;
                 
                 {/* Botão de download para documentos gerados */}
                 {message.documentId && (
-                  <div className="mt-3 pt-3 border-t border-border/20">
+                  <div className="mt-3 pt-3 border-t border-gray-200">
                     <Button
                       size="sm"
                       variant="outline"
@@ -378,7 +367,7 @@ Quanto mais detalhes você fornecer, melhor poderei ajudá-lo!`;
                 )}
                 
                 <div className={`text-xs mt-2 opacity-70 ${
-                  message.type === 'user' ? 'text-primary-foreground' : 'text-muted-foreground'
+                  message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
                 }`}>
                   {message.timestamp.toLocaleTimeString('pt-BR', {
                     hour: '2-digit',
@@ -388,7 +377,7 @@ Quanto mais detalhes você fornecer, melhor poderei ajudá-lo!`;
               </Card>
 
               {message.type === 'user' && (
-                <Avatar className="h-8 w-8 bg-muted">
+                <Avatar className="h-8 w-8 bg-gray-200">
                   <AvatarFallback>
                     <User className="h-4 w-4" />
                   </AvatarFallback>
@@ -400,46 +389,42 @@ Quanto mais detalhes você fornecer, melhor poderei ajudá-lo!`;
         </div>
       </ScrollArea>
 
-      {/* Quick Actions */}
-      {messages.length <= 1 && (
-        <div className="p-4 border-t border-border/60 bg-muted/30">
-          <div className="max-w-4xl mx-auto">
-            <p className="text-sm text-muted-foreground mb-3 text-center">
-              Ações rápidas para começar:
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {quickActions.map((action, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={action.action}
-                  className="h-auto p-3 flex flex-col items-center gap-2 hover:bg-accent"
-                >
-                  <action.icon className="h-5 w-5" />
-                  <span className="text-xs text-center">{action.text}</span>
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Input */}
-      <div className="border-t border-border/60 p-4 bg-card">
+      <div className="border-t border-gray-200 p-4 bg-white">
         <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto">
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 p-2 border border-gray-300 rounded-xl bg-white shadow-sm">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700"
+              disabled
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+            
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Digite sua pergunta sobre licitações, Lei 14.133/2021 ou solicite a geração de documentos..."
-              className="flex-1 h-11"
+              placeholder="Digite sua pergunta sobre licitações..."
+              className="flex-1 border-none shadow-none focus-visible:ring-0 text-sm"
               disabled={isLoading}
             />
+            
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700"
+              disabled
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
+            
             <Button 
               type="submit" 
               size="sm" 
-              className="h-11 px-4"
+              className="h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700"
               disabled={!inputValue.trim() || isLoading}
             >
               <Send className="h-4 w-4" />

@@ -1,188 +1,249 @@
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { 
-  MessageCircle, 
+  MessageSquare, 
+  Plus, 
   FileText, 
   BookOpen, 
-  History, 
+  User, 
   Settings, 
-  Scale,
-  User,
   LogOut,
-  FolderOpen,
-  PlusCircle,
-  Search
+  Scale,
+  Search,
+  History,
+  Trash2
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
-interface AppSidebarProps {
-  onLogout: () => void;
-  currentSection: string;
-  onSectionChange: (section: string) => void;
+interface Conversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
 }
 
-const AppSidebar = ({ onLogout, currentSection, onSectionChange }: AppSidebarProps) => {
-  const mainItems = [
+interface AppSidebarProps {
+  currentConversationId: string | null;
+  onConversationSelect: (id: string | null) => void;
+  onNewChat: () => void;
+  onSectionChange: (section: string) => void;
+  currentSection: string;
+}
+
+const AppSidebar = ({ 
+  currentConversationId, 
+  onConversationSelect, 
+  onNewChat,
+  onSectionChange,
+  currentSection 
+}: AppSidebarProps) => {
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadConversations = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      setConversations(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar conversas:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadConversations();
+  }, [user]);
+
+  const deleteConversation = async (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId);
+
+      if (error) throw error;
+
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      
+      if (currentConversationId === conversationId) {
+        onConversationSelect(null);
+      }
+
+      toast({
+        title: "Conversa excluída",
+        description: "A conversa foi removida com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir a conversa.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const navigationItems = [
     {
-      title: 'Chat IA',
-      url: 'chat',
-      icon: MessageCircle,
-      description: 'Conversar com a IA especializada'
+      id: 'chat',
+      label: 'Chat IA',
+      icon: MessageSquare,
+      description: 'Assistente especializada'
     },
     {
-      title: 'Gerar Documentos',
-      url: 'documents',
+      id: 'documents',
+      label: 'Documentos',
       icon: FileText,
-      description: 'Criar DFD, ETP e TR'
+      description: 'DFD, ETP, TR'
     },
     {
-      title: 'Consultar Lei',
-      url: 'law',
+      id: 'law',
+      label: 'Base Legal',
       icon: BookOpen,
       description: 'Lei 14.133/2021'
     },
     {
-      title: 'Modelos',
-      url: 'templates',
-      icon: FolderOpen,
-      description: 'Banco de modelos'
-    }
-  ];
-
-  const utilityItems = [
-    {
-      title: 'Histórico',
-      url: 'history',
-      icon: History,
-      description: 'Conversas anteriores'
-    },
-    {
-      title: 'Buscar',
-      url: 'search',
-      icon: Search,
-      description: 'Pesquisar documentos'
-    },
-    {
-      title: 'Configurações',
-      url: 'settings',
-      icon: Settings,
-      description: 'Preferências'
+      id: 'profile',
+      label: 'Perfil',
+      icon: User,
+      description: 'Seus dados'
     }
   ];
 
   return (
-    <Sidebar className="border-r border-border/60">
-      <SidebarHeader className="border-b border-border/60 p-4">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 rounded-lg bg-primary text-white">
-            <Scale className="h-6 w-6" />
+    <div className="flex flex-col h-full w-64 bg-gray-900 text-white">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-700">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="p-2 rounded-lg bg-blue-600">
+            <Scale className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gradient">LicitaIA</h2>
-            <p className="text-xs text-muted-foreground">Lei 14.133/2021</p>
+            <h1 className="font-bold text-lg">LicitaIA</h1>
+            <p className="text-xs text-gray-400">Lei 14.133/2021</p>
           </div>
         </div>
-      </SidebarHeader>
+        
+        <Button 
+          onClick={onNewChat}
+          className="w-full bg-gray-800 hover:bg-gray-700 border border-gray-600"
+          variant="outline"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Chat
+        </Button>
+      </div>
 
-      <SidebarContent className="p-2">
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground px-2 mb-2">
-            PRINCIPAIS
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    onClick={() => onSectionChange(item.url)}
-                    className={`w-full justify-start h-auto p-3 rounded-lg transition-all duration-200 hover:bg-accent/60 ${
-                      currentSection === item.url 
-                        ? 'bg-primary/10 text-primary border border-primary/20' 
-                        : 'hover:bg-accent'
-                    }`}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">{item.title}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {item.description}
-                      </span>
-                    </div>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <Separator className="my-4" />
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground px-2 mb-2">
-            FERRAMENTAS
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {utilityItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    onClick={() => onSectionChange(item.url)}
-                    className={`w-full justify-start h-auto p-3 rounded-lg transition-all duration-200 ${
-                      currentSection === item.url 
-                        ? 'bg-primary/10 text-primary border border-primary/20' 
-                        : 'hover:bg-accent'
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <div className="flex flex-col items-start">
-                      <span className="text-sm">{item.title}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {item.description}
-                      </span>
-                    </div>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <Separator className="my-4" />
-
-        <div className="p-3 bg-muted/30 rounded-lg">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-start"
-            onClick={() => onSectionChange('new-chat')}
-          >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Nova Conversa
-          </Button>
+      {/* Navigation */}
+      <div className="p-4 border-b border-gray-700">
+        <div className="space-y-1">
+          {navigationItems.map((item) => (
+            <Button
+              key={item.id}
+              variant="ghost"
+              className={`w-full justify-start text-left p-3 h-auto ${
+                currentSection === item.id 
+                  ? 'bg-gray-800 text-white' 
+                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+              }`}
+              onClick={() => onSectionChange(item.id)}
+            >
+              <item.icon className="h-4 w-4 mr-3" />
+              <div>
+                <div className="font-medium">{item.label}</div>
+                <div className="text-xs text-gray-400">{item.description}</div>
+              </div>
+            </Button>
+          ))}
         </div>
-      </SidebarContent>
+      </div>
 
-      <SidebarFooter className="border-t border-border/60 p-4">
+      {/* Conversations */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="p-4 pb-2">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-400">Histórico</h3>
+            <History className="h-4 w-4 text-gray-500" />
+          </div>
+        </div>
+
+        <ScrollArea className="flex-1 px-4">
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-12 bg-gray-800 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : conversations.length === 0 ? (
+            <div className="text-center py-8">
+              <MessageSquare className="h-8 w-8 text-gray-600 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Nenhuma conversa ainda</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {conversations.map((conversation) => (
+                <div
+                  key={conversation.id}
+                  className={`group flex items-center justify-between p-3 rounded cursor-pointer transition-colors ${
+                    currentConversationId === conversation.id
+                      ? 'bg-gray-800 text-white'
+                      : 'hover:bg-gray-800 text-gray-300'
+                  }`}
+                  onClick={() => onConversationSelect(conversation.id)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {conversation.title}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(conversation.updated_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 text-gray-500 hover:text-red-400"
+                    onClick={(e) => deleteConversation(conversation.id, e)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </div>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-700">
         <div className="flex items-center space-x-3 mb-3">
-          <div className="p-2 rounded-full bg-muted">
+          <div className="p-2 rounded-full bg-gray-700">
             <User className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Usuário Autorizado</p>
-            <p className="text-xs text-muted-foreground truncate">
-              usuario@orgao.gov.br
+            <p className="text-sm font-medium truncate">
+              {user?.email?.split('@')[0] || 'Usuário'}
+            </p>
+            <p className="text-xs text-gray-400 truncate">
+              {user?.email}
             </p>
           </div>
         </div>
@@ -190,14 +251,14 @@ const AppSidebar = ({ onLogout, currentSection, onSectionChange }: AppSidebarPro
         <Button
           variant="ghost"
           size="sm"
-          onClick={onLogout}
-          className="w-full justify-start text-muted-foreground hover:text-destructive"
+          onClick={signOut}
+          className="w-full justify-start text-gray-400 hover:text-red-400"
         >
           <LogOut className="h-4 w-4 mr-2" />
           Sair
         </Button>
-      </SidebarFooter>
-    </Sidebar>
+      </div>
+    </div>
   );
 };
 
