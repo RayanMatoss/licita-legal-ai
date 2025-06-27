@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6b6b6f630cf52ff89ef76fbfe440e37be22e594d
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +43,7 @@ const ChatInterface = ({
 
   const generateDocument = async (message: string) => {
     try {
+<<<<<<< HEAD
       // Trocar chamada para o backend local
       const response = await fetch('http://localhost:8000/', {
         method: 'POST',
@@ -50,6 +55,17 @@ const ChatInterface = ({
         throw new Error(data.error);
       }
       return data;
+=======
+      const response = await supabase.functions.invoke('generate-document', {
+        body: { message, userId: user?.id }
+      });
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      return response.data;
+>>>>>>> 6b6b6f630cf52ff89ef76fbfe440e37be22e594d
     } catch (error: any) {
       console.error('Erro ao gerar documento:', error);
       throw error;
