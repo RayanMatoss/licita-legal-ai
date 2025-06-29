@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -12,14 +11,6 @@ const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 console.log('OPENAI_API_KEY:', openAIApiKey);
 console.log('SUPABASE_URL:', supabaseUrl);
 console.log('SUPABASE_SERVICE_ROLE_KEY:', supabaseKey);
-=======
-
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
->>>>>>> 6b6b6f630cf52ff89ef76fbfe440e37be22e594d
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -125,7 +116,6 @@ Este documento está em conformidade com o Art. 40 da Lei 14.133/2021.
 `
 };
 
-<<<<<<< HEAD
 // Definição do tipo para a resposta da OpenAI
 type OpenAIResponse = {
   choices: {
@@ -135,8 +125,6 @@ type OpenAIResponse = {
   }[];
 };
 
-=======
->>>>>>> 6b6b6f630cf52ff89ef76fbfe440e37be22e594d
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -144,10 +132,6 @@ serve(async (req) => {
 
   try {
     const { message, userId } = await req.json();
-<<<<<<< HEAD
-    console.log('Payload recebido:', { message, userId });
-=======
->>>>>>> 6b6b6f630cf52ff89ef76fbfe440e37be22e594d
     
     if (!openAIApiKey) {
       throw new Error('OpenAI API key não configurada');
@@ -202,26 +186,19 @@ Se a mensagem não for uma solicitação de documento, retorne: {"erro": "Não �
       }),
     });
 
-<<<<<<< HEAD
     const analysisData = await analysisResponse.json() as OpenAIResponse;
     console.log('Resposta da OpenAI:', analysisData);
+    console.log('Conteúdo retornado pela OpenAI:', analysisData.choices[0]?.message?.content);
     let analysis;
-    if (
-      analysisData &&
-      Array.isArray(analysisData.choices) &&
-      analysisData.choices[0] &&
-      analysisData.choices[0].message &&
-      typeof analysisData.choices[0].message.content === "string"
-    ) {
+    try {
       analysis = JSON.parse(analysisData.choices[0].message.content);
-    } else {
-      console.error("Resposta inesperada da OpenAI:", analysisData);
-      throw new Error("Resposta inesperada da OpenAI");
+    } catch (e) {
+      console.error('Erro ao fazer parse do conteúdo da OpenAI:', analysisData.choices[0]?.message?.content, e);
+      return new Response(JSON.stringify({ 
+        error: 'Não foi possível interpretar a resposta da OpenAI. Tente novamente ou refine sua solicitação.',
+        rawContent: analysisData.choices[0]?.message?.content || null
+      }), { status: 500 });
     }
-=======
-    const analysisData = await analysisResponse.json();
-    const analysis = JSON.parse(analysisData.choices[0].message.content);
->>>>>>> 6b6b6f630cf52ff89ef76fbfe440e37be22e594d
 
     if (analysis.erro) {
       return new Response(JSON.stringify({ 
@@ -258,13 +235,7 @@ Como posso ajudá-lo?`
     documentContent = documentContent.replace(/{[^}]+}/g, 'Não especificado');
 
     // Salvar documento no banco
-<<<<<<< HEAD
     const supabase = createClient(supabaseUrl!, supabaseKey!);
-=======
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
->>>>>>> 6b6b6f630cf52ff89ef76fbfe440e37be22e594d
 
     const { data: document, error } = await supabase
       .from('documents')
@@ -312,11 +283,7 @@ Gostaria que eu faça alguma alteração no documento ou precisa de ajuda com al
   } catch (error) {
     console.error('Erro na geração do documento:', error);
     return new Response(JSON.stringify({ 
-<<<<<<< HEAD
       error: 'Erro ao gerar documento: ' + (error instanceof Error ? error.message : String(error))
-=======
-      error: 'Erro ao gerar documento: ' + error.message 
->>>>>>> 6b6b6f630cf52ff89ef76fbfe440e37be22e594d
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
